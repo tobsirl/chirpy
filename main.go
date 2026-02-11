@@ -11,6 +11,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir(filepathRoot)))
+	// configure the filepath so that the image is accessible from http://localhost:8080/assets/logo.png
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(filepathRoot+"/assets"))))	
 
 	srv := &http.Server{
 		Addr:    ":" + port,
