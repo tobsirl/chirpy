@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -83,9 +84,8 @@ func (cfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Reques
 		Body string `json:"body"`
 	}
 	var req chirpRequest
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&req); err != nil {
+	       dec := json.NewDecoder(r.Body)
+	       if err := dec.Decode(&req); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -93,5 +93,22 @@ func (cfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, map[string]bool{"valid": true})
+	cleaned := cleanChirp(req.Body)
+	respondWithJSON(w, http.StatusOK, map[string]string{"cleaned_body": cleaned})
+}
+
+// cleanChirp replaces profane words with "****" (case-insensitive, word-only)
+func cleanChirp(body string) string {
+	profane := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert": {},
+		"fornax": {},
+	}
+	words := strings.Split(body, " ")
+	for i, w := range words {
+		if _, ok := profane[strings.ToLower(w)]; ok {
+			words[i] = "****"
+		}
+	}
+	return strings.Join(words, " ")
 }
