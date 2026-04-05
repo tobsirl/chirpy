@@ -64,6 +64,7 @@ func main() {
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerAdminMetrics)
+	mux.HandleFunc("GET /api/chirps", apiCfg.handlerListChirps)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerCreateChirp)
@@ -129,6 +130,29 @@ func cleanChirp(body string) string {
 	}
 	return strings.Join(words, " ")
 }
+
+// handlerListChirps retrieves all chirps from the database and returns them as JSON
+func (cfg *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.dbQueries.ListChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to retrieve chirps")
+		return
+	}
+
+	chirps := make([]Chirp, len(dbChirps))
+	for i, c := range dbChirps {
+		chirps[i] = Chirp{
+			ID:        c.ID,
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
+			Body:      c.Body,
+			UserID:    c.UserID,
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, chirps)
+}
+
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type chirpRequest struct {
