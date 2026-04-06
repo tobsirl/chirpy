@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -51,5 +52,37 @@ func TestValidateJWT_WrongSecret(t *testing.T) {
 	_, err = ValidateJWT(tokenString, "wrong-secret")
 	if err == nil {
 		t.Fatal("ValidateJWT() expected error for wrong secret, got nil")
+	}
+}
+
+func TestGetBearerToken(t *testing.T) {
+	tests := []struct {
+		name      string
+		header    string
+		wantToken string
+		wantErr   bool
+	}{
+		{"valid token", "Bearer my-token-123", "my-token-123", false},
+		{"empty header", "", "", true},
+		{"missing prefix", "my-token-123", "", true},
+		{"wrong prefix", "Basic my-token-123", "", true},
+		{"extra whitespace", "Bearer   my-token-123  ", "my-token-123", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			headers := http.Header{}
+			if tt.header != "" {
+				headers.Set("Authorization", tt.header)
+			}
+			got, err := GetBearerToken(headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetBearerToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.wantToken {
+				t.Errorf("GetBearerToken() = %q, want %q", got, tt.wantToken)
+			}
+		})
 	}
 }
