@@ -1,10 +1,10 @@
 package auth
 
 import (
-"testing"
-"time"
+	"testing"
+	"time"
 
-"github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 func TestMakeAndValidateJWT(t *testing.T) {
