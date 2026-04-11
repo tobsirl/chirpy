@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -183,6 +184,13 @@ func (cfg *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) 
 			Body:      c.Body,
 			UserID:    c.UserID,
 		}
+	}
+
+	sortOrder := r.URL.Query().Get("sort")
+	if sortOrder == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
 	}
 
 	respondWithJSON(w, http.StatusOK, chirps)
