@@ -155,7 +155,20 @@ func cleanChirp(body string) string {
 
 // handlerListChirps retrieves all chirps from the database and returns them as JSON
 func (cfg *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.dbQueries.ListChirps(r.Context())
+	var dbChirps []database.Chirp
+	var err error
+
+	authorIDStr := r.URL.Query().Get("author_id")
+	if authorIDStr != "" {
+		authorID, parseErr := uuid.Parse(authorIDStr)
+		if parseErr != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid author ID")
+			return
+		}
+		dbChirps, err = cfg.dbQueries.ListChirpsByAuthor(r.Context(), authorID)
+	} else {
+		dbChirps, err = cfg.dbQueries.ListChirps(r.Context())
+	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to retrieve chirps")
 		return
