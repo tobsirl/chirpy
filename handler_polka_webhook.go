@@ -5,9 +5,16 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/tobsirl/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil || apiKey != cfg.polkaKey {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	type requestData struct {
 		UserID uuid.UUID `json:"user_id"`
 	}
@@ -27,7 +34,7 @@ func (cfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err := cfg.dbQueries.UpgradeToChirpyRed(r.Context(), req.Data.UserID)
+	err = cfg.dbQueries.UpgradeToChirpyRed(r.Context(), req.Data.UserID)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "User not found")
 		return
